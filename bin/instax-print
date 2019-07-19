@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """Instax SP Print Script.
 
 Author: James Sutton 2017 - jsutton.co.uk
+        Ralf Tossenberger 2019 SP-1 support
 
 This can be used to print an image to a Fujifilm Instax SP-2 printer.
 Parameters:
@@ -84,7 +85,9 @@ if __name__ == "__main__":
 
     if args.version is 1:
         logging.info("Attempting to print to an Instax SP-1 printer.")
-        # TODO - Need to find an SP-2 to test with.
+        # Warning, this does not work in production yet.
+        myInstax = instax.SP1(ip=args.host, port=args.port, pinCode=args.pin,
+                      timeout=args.timeout)
     elif args.version is 2:
         logging.info("Attempting to print to an Instax SP-2 printer.")
         myInstax = instax.SP2(ip=args.host, port=args.port, pinCode=args.pin,
@@ -120,5 +123,3 @@ if __name__ == "__main__":
         )  ( ')
         (  /  )
          \(___)|""")
-
-
