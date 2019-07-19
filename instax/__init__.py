@@ -1,3 +1,4 @@
+from .sp1 import SP1
 from .sp2 import SP2
 from .sp3 import SP3
 from .testServer import TestServer
