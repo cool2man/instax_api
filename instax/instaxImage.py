@@ -1,5 +1,6 @@
 """Image transformation utilities."""
 from PIL import Image, ImageOps
+from io import BytesIO
 import logging
 
 
@@ -7,7 +8,7 @@ class InstaxImage:
     """Image Utilities class."""
 
     dimensions = {
-        1 : (600, 800),
+        1 : (480, 640),
         2 : (600, 800),
         3 : (800, 800)
     }
@@ -23,39 +24,44 @@ class InstaxImage:
         self.sourceImage = Image.open(imagePath)
 
     def encodeImage(self):
-        """Encode the loaded Image."""
-        imgWidth, imgHeight = self.myImage.size
-        logging.info("Initial Image Size: W: %s, H: %s" % (imgWidth, imgHeight))
-        # Quick check that it's the right dimensions
-        if(imgWidth + imgHeight != (self.printHeight + self.printWidth)):
-            raise Exception("Image was not 800x600 or 600x800, it was : w:%d, h:%d" % (imgWidth, imgHeight))
-        if(imgWidth != self.printWidth):
-            # Rotate the image
-            logging.info("Rotating")
-            self.myImage = self.myImage.rotate(-90, expand=True)
-        if (self.printWidth == self.printHeight):
-            # Square images are a bit tricky, we have to assume they are oriented correctly
-            logging.info("Rotating Square Image")
-            self.myImage = self.myImage.rotate(-90, expand=True)
-        logging.info("New Image Size: W: %s, H: %s" % (self.myImage.size))
-        imagePixels = self.myImage.getdata()
-        logging.info("Mode: %s" % (self.myImage.mode))
-        arrayLen = len(imagePixels) * 3
-        logging.info("Encoded Array Length: %s" % arrayLen)
-        encodedBytes = [None] * arrayLen
-        for h in range(self.printHeight):
-            for w in range(self.printWidth):
-                r, g, b= imagePixels[(h * self.printWidth) + w]
-                redTarget = (((w * self.printHeight) * 3) +
-                             (self.printHeight * 0)) + h
-                greenTarget = (((w * self.printHeight) * 3) +
-                               (self.printHeight * 1)) + h
-                blueTarget = (((w * self.printHeight) * 3) +
-                              (self.printHeight * 2)) + h
-                encodedBytes[redTarget] = int(r)
-                encodedBytes[greenTarget] = int(g)
-                encodedBytes[blueTarget] = int(b)
-        return encodedBytes
+        if (self.type == 1):
+            with BytesIO() as f:
+                self.myImage.save(f, format='JPEG', quality=90)
+                return f.getvalue()
+        else:
+            """Encode the loaded Image."""
+            imgWidth, imgHeight = self.myImage.size
+            logging.info("Initial Image Size: W: %s, H: %s" % (imgWidth, imgHeight))
+            # Quick check that it's the right dimensions
+            if(imgWidth + imgHeight != (self.printHeight + self.printWidth)):
+                raise Exception("Image was not %d x %d or %d x %d, it was : w:%d, h:%d" % (self.printWidth, self.printHeight, self.printHeight, self.printWidth, imgWidth, imgHeight))
+            if(imgWidth != self.printWidth):
+                # Rotate the image
+                logging.info("Rotating")
+                self.myImage = self.myImage.rotate(-90, expand=True)
+            if (self.printWidth == self.printHeight):
+                # Square images are a bit tricky, we have to assume they are oriented correctly
+                logging.info("Rotating Square Image")
+                self.myImage = self.myImage.rotate(-90, expand=True)
+            logging.info("New Image Size: W: %s, H: %s" % (self.myImage.size))
+            imagePixels = self.myImage.getdata()
+            logging.info("Mode: %s" % (self.myImage.mode))
+            arrayLen = len(imagePixels) * 3
+            logging.info("Encoded Array Length: %s" % arrayLen)
+            encodedBytes = [None] * arrayLen
+            for h in range(self.printHeight):
+                for w in range(self.printWidth):
+                    r, g, b= imagePixels[(h * self.printWidth) + w]
+                    redTarget = (((w * self.printHeight) * 3) +
+                                 (self.printHeight * 0)) + h
+                    greenTarget = (((w * self.printHeight) * 3) +
+                                   (self.printHeight * 1)) + h
+                    blueTarget = (((w * self.printHeight) * 3) +
+                                  (self.printHeight * 2)) + h
+                    encodedBytes[redTarget] = int(r)
+                    encodedBytes[greenTarget] = int(g)
+                    encodedBytes[blueTarget] = int(b)
+            return encodedBytes
 
     def decodeImage(self, imageBytes):
         """Decode the byte array into an image."""
@@ -83,7 +89,7 @@ class InstaxImage:
         """Rotate, Resize and Crop the image.
 
         Rotate, Resize and Crop the image, so that it is the correct
-        dimensions for printing to the Instax SP-2.
+        dimensions for printing to the Instax.
         """
         maxSize = self.printHeight, self.printWidth  # The Max Image size
         rotatedImage = rotate_image(self.sourceImage)
